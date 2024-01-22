@@ -1,0 +1,13 @@
+categories:
+- Intron Retention
+- Alternative Splicing
+description: SpliceWiz for Galaxy
+long_description: |
+  SpliceWiz analyse BAM files for IR and alternative splicing. This tool allows
+  users to (1) Build a SpliceWiz reference, (2) Process BAM files, and 
+  (3) collate samples into a SpliceWiz NxtSE dataset. 
+homepage_url: http://github.com/alexchwong/SpliceWiz
+name: splicewiz
+owner: Alex CH Wong
+remote_repository_url: http://github.com/alexchwong/SpliceWiz
+type: unrestricted

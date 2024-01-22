@@ -1,0 +1,302 @@
+<tool id="splicewiz" name="SpliceWiz for Galaxy" version="1.4.1">
+    
+    <!-- [REQUIRED] Tool description displayed after the tool name -->
+    <description>This runs SpliceWiz on Galaxy</description>
+    
+    <!-- [OPTIONAL] 3rd party tools, binaries, modules... required for the tool to work -->
+    <requirements>
+<!--
+        <requirement type="binary">required_binary</requirement>
+-->
+    </requirements>
+    
+    <!-- [OPTIONAL] Command to be executed to get the tool's version string -->
+    <version_command>
+<!--
+        tool_binary -v
+-->
+    </version_command>
+    <!-- [REQUIRED] The command to execute  ${GALAXY_SLOTS} -->
+    <command><![CDATA[
+		#if str($mode_condition.mode) == "main":
+			${__tool_directory__}/nxtirf main 
+				-t \${GALAXY_SLOTS:-4} 
+				'$mode_condition.input' 
+				'$mode_condition.ref' 
+				$output1 $output2
+		#else if str($mode_condition.mode) == "buildRef":
+            #if str($mode_condition.fasta_type.fasta_source) == "all_fasta_source":
+				Rscript '${__tool_directory__}/splicewiz.R'
+				--cores \${GALAXY_SLOTS:-1}
+				--fasta '$mode_condition.fasta_type.ref.fields.path'
+				--gtf '$mode_condition.gtf'
+				--genome_type '$mode_condition.genome_type'
+				--ref $bRef_out
+            #else if str($mode_condition.fasta_type.fasta_source) == "private_fasta":
+				Rscript '${__tool_directory__}/splicewiz.R'
+				--cores \${GALAXY_SLOTS:-1}
+				--fasta '$mode_condition.fasta_type.ref'
+				--gtf '$mode_condition.gtf'
+				--genome_type '$mode_condition.genome_type'
+				--ref $bRef_out
+        #else if str($mode_condition.mode) == "processBAM":
+
+        #else if str($mode_condition.mode) == "collateData":
+
+        #end if
+    ]]></command>
+    <!-- [REQUIRED] Input files and tool parameters -->
+    <inputs>
+		<conditional name="mode_condition" >
+			<param name="mode" type="select" label="Mode" help="" >
+				<option value="buildRef" selected="true">
+					buildRef()
+				</option>
+				<option value="processBAM">
+					processBAM()
+				</option>
+				<option value="collateData">
+					collateData()
+				</option>
+			</param>
+            <when value="buildRef">
+                <conditional name="fasta_type" >
+                    <param name="fasta_source" type="select" 
+						label="FASTA Source" help="The FASTA file of the genome" >
+                        <option value="all_fasta_source" selected="true">
+							From Galaxy's ALL_FASTA Library</option>
+                        <option value="private_fasta" selected="true">
+							From User's History</option>
+                    </param>
+                    <when value="all_fasta_source">
+                        <param name="ref" type="select" 
+							label="Source FASTA Sequence" 
+							help="A genome fasta file from ALL_FASTA">
+                            <options from_data_table="all_fasta"/>
+                        </param>
+                    </when>
+                    <when value="private_fasta">
+                        <param name="ref" type="data" format="fasta" 
+							label="Source FASTA Sequence" 
+							help="A genome fasta file from user's history" />
+                    </when>
+				<param name="gtf" type="data" format="gtf" 
+					label="Input GTF file" 
+					help="A transcriptome annotation GTF file" />
+				</param>
+				<param name="genome_type" type="select" 
+					label="Genome type">
+				  <option value="hg38" selected="true">hg38</option>
+				  <option value="hg19">hg19</option>
+				  <option value="mm9">mm9</option>
+				  <option value="mm10">mm10</option>
+				  <option value="">other</option>
+				</param>
+            </when>
+            <when value="processBAM">
+				<param name="ref" type="data" format="zip" 
+					label="(Zipped) SpliceWiz reference" 
+					help="A zip file, containing contents of SpliceWiz reference directory" />
+				</param>
+				<param name="ref" type="data" format="bam" multiple="True"
+					label="One or more BAM files" 
+					help="" />
+				</param>
+            </when>
+            <when value="collateData">
+
+            </when>
+		</conditional>
+    </inputs>
+    
+    <!-- [STRONGLY RECOMMANDED] Exit code rules -->
+    <stdio>
+        <!-- [HELP] If no exit code rule is defined, the tool will stop if anything is written to STDERR -->
+        <exit_code range="1:" level="fatal" />
+    </stdio>
+
+    <!-- [REQUIRED] Output files -->
+    <outputs>
+        <data name="pb_out" format="txt" label="SpliceWiz processBAM Output">
+			<filter>mode_condition['mode'] == 'processBAM'</filter>
+        </data>
+        <data name="pb_cov" format="data" label="SpliceWiz COV File"> 
+			<filter>mode_condition['mode'] == 'processBAM'</filter>
+        </data>
+        <data name="bRef_out" format="zip" label="(Zipped) SpliceWiz Reference"> 
+			<filter>mode_condition['mode'] == 'buildRef'</filter>
+        </data>
+        <data name="nxtSE_out" format="zip" label="(Zipped) NxtSE Dataset"> 
+			<filter>mode_condition['mode'] == 'collateData'</filter>
+        </data>
+	</outputs>    
+    
+    <!-- [OPTIONAL] Tests to be run manually by the Galaxy admin -->
+    <tests>
+        <!-- [HELP] Test files have to be in the ~/test-data directory -->
+<!--
+        <test>
+         <param name="input" value="input_test.txt" />
+         <output name="output" file="output_test.txt" />
+        </test>
+-->
+        <!-- [HELP] Multiple tests can be defined with different parameters -->
+<!--
+        <test>
+        </test>
+-->
+    </tests>
+    
+    <!-- [OPTIONAL] Help displayed in Galaxy -->
+    <help>
+
+.. class:: infomark
+
+**Authors** Alex CH Wong a.wong@centenary.org.au
+
+---------------------------------------------------
+
+.. class:: infomark
+
+**Please cite** If you use this tool, please cite `Author pub. Title and other. This is a bogus link &lt;http://www.ncbi.nlm.nih.gov/pubmed/23286517&gt;`_
+
+---------------------------------------------------
+
+==============
+Tool Name
+==============
+
+-----------
+Description
+-----------
+
+ | Description of the tool in 1 lines
+ | or 2 lines
+
+
+-----------------
+Workflow position
+-----------------
+
+**Upstream tools**
+
+====== =========== ======= ============
+Name   output file format  parameter
+====== =========== ======= ============
+tool 1 outFile.tab tabular param name 1
+tool 2 outFile.csv csv     param name 2
+====== =========== ======= ============
+
+
+**Downstream tools**
+
+====== =========== =======
+Name   output file format 
+====== =========== =======
+tool 1 outFile.tab tabular
+tool 2 outFile.csv csv    
+====== =========== =======
+
+
+-----------
+Input files
+-----------
+
++-------------------------+-----------+
+| Parameter : num + label |  Format   |
++=========================+===========+
+| 1 : file1.tab           |  tabular  |
++-------------------------+-----------+
+| 2 : file2.csv           |   csv     |
++-------------------------+-----------+
+
+Constraints files : 
+	* column 1 : description
+	* column 5 : description
+
+
+----------
+Parameters
+----------
+
+parameter1
+	Parameter 1 description
+
+parameter2longer
+	| Parameter 2 description
+	| on 2 lines if needed
+
+
+------------
+Output files
+------------
+
+output.tab
+	| File description
+	| You can continue your analysis with the tool retcor or fillPeaks
+
+outFile.csv
+	File description
+
+	
+---------------------------------------------------
+
+---------------
+Working example
+---------------
+
+Input files
+===========
+
+| **These input files can be used in the purview "URL/Text:" of the tool "Get Data/Upload File",**
+| **by checking the box "Convert spaces to tabs: YES"**
+
+file1.txt
+	Model input file::
+	
+		colonne1 colonne2 col3 etc
+		element1.1 element1.2 el1.3 ...
+		element2.1 elem2.2 el1.3 ...
+		elem3.1 3.2 el1.3 ...
+
+		
+Parameters
+==========
+
+Parameter 1  -> **content**
+
+Parameter 2  -> **content**
+
+
+Output files
+============
+
+output.pdf
+
+.. image:: ./static/images/output.png
+        :width: 500
+        :height: 400
+	
+
+output.txt
+
+========== ========== ===== ===
+colonne1   colonne 2  col3  etc
+========== ========== ===== ===
+element1.1 element1.2 el1.3 ...
+element2.1 elem 2.2   el1.3 ...
+elem3.1       3.2     el1.3 ...
+========== ========== ===== ===
+
+
+output.other::
+	Something
+	
+---------------------------------------------------
+
+.. class:: infomark
+
+More information about formatting can be found here: http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html
+    </help>
+    
+</tool>
