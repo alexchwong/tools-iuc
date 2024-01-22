@@ -80,10 +80,10 @@
 							label="Source FASTA Sequence" 
 							help="A genome fasta file from user's history" />
                     </when>
+				</conditional>
 				<param name="gtf" type="data" format="gtf" 
 					label="Input GTF file" 
 					help="A transcriptome annotation GTF file" />
-				</param>
 				<param name="genome_type" type="select" 
 					label="Genome type">
 				  <option value="hg38" selected="true">hg38</option>
@@ -97,11 +97,9 @@
 				<param name="ref" type="data" format="zip" 
 					label="(Zipped) SpliceWiz reference" 
 					help="A zip file, containing contents of SpliceWiz reference directory" />
-				</param>
 				<param name="ref" type="data" format="bam" multiple="True"
 					label="One or more BAM files" 
 					help="" />
-				</param>
             </when>
             <when value="collateData">
 
