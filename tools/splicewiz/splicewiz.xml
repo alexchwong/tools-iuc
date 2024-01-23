@@ -5,6 +5,8 @@
     
     <!-- [OPTIONAL] 3rd party tools, binaries, modules... required for the tool to work -->
     <requirements>
+		<requirement type="package" version="1.20.3">r-getopt</requirement>
+		
 		<requirement type="package" version="1.4.1">bioconductor-splicewiz</requirement>
     </requirements>
     
@@ -16,15 +18,10 @@
     </version_command>
     <!-- [REQUIRED] The command to execute  ${GALAXY_SLOTS} -->
     <command><![CDATA[
-		#if str($mode_condition.mode) == "main":
-			${__tool_directory__}/nxtirf main 
-				-t \${GALAXY_SLOTS:-4} 
-				'$mode_condition.input' 
-				'$mode_condition.ref' 
-				$output1 $output2
-		#else if str($mode_condition.mode) == "buildRef":
+		#if str($mode_condition.mode) == "buildRef":
             #if str($mode_condition.fasta_type.fasta_source) == "all_fasta_source":
 				Rscript '${__tool_directory__}/spliceWiz.R'
+				--mode 'buildRef'
 				--cores \${GALAXY_SLOTS:-1}
 				--fasta '$mode_condition.fasta_type.ref.fields.path'
 				--gtf '$mode_condition.gtf'
@@ -32,15 +29,13 @@
 				--ref $bRef_out
             #else if str($mode_condition.fasta_type.fasta_source) == "private_fasta":
 				Rscript '${__tool_directory__}/spliceWiz.R'
+				--mode 'buildRef'
 				--cores \${GALAXY_SLOTS:-1}
 				--fasta '$mode_condition.fasta_type.ref'
 				--gtf '$mode_condition.gtf'
 				--genome_type '$mode_condition.genome_type'
 				--ref $bRef_out
-        #else if str($mode_condition.mode) == "processBAM":
-
-        #else if str($mode_condition.mode) == "collateData":
-
+			#end if
         #end if
     ]]></command>
     <!-- [REQUIRED] Input files and tool parameters -->
