@@ -5,9 +5,7 @@
     
     <!-- [OPTIONAL] 3rd party tools, binaries, modules... required for the tool to work -->
     <requirements>
-<!--
-        <requirement type="binary">required_binary</requirement>
--->
+		<requirement type="package" version="1.4.1">bioconductor-splicewiz</requirement>
     </requirements>
     
     <!-- [OPTIONAL] Command to be executed to get the tool's version string -->
