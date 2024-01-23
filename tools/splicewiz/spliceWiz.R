@@ -55,8 +55,7 @@ if(opt$mode == "buildRef") {
         fasta = opt$fasta,
         gtf = opt$gtf,
         genome_type = opt$genome_type,
-        ontologySpecies = species,
-        n_threads = opt$cores
+        ontologySpecies = species
     )
     
     # zip output
