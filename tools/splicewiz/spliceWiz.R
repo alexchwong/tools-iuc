@@ -61,10 +61,8 @@ if(opt$mode == "buildRef") {
     )
     
     # zip output
-    zip(zipfile = opt$ref, zip = zip, files = list.files(
-        path = refPath,
-        full.names = TRUE, recursive = TRUE
-    ))
+    files2zip <- dir(refPath, full.names = TRUE)
+    zip(zipfile = opt$ref, zip = zip, files = files2zip)
     
     unlink(refPath, recursive = TRUE)
 }
