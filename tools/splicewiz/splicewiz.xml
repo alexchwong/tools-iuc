@@ -5,6 +5,7 @@
     
     <!-- [OPTIONAL] 3rd party tools, binaries, modules... required for the tool to work -->
     <requirements>
+		<requirement type="package" version="2.3.0">r-zip</requirement>	
 		<requirement type="package" version="1.20.3">r-getopt</requirement>
 		
 		<requirement type="package" version="1.4.1">bioconductor-splicewiz</requirement>
