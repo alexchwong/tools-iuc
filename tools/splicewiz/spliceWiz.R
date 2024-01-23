@@ -37,6 +37,8 @@ if (!is.null(opt$help)) {
     q(status = 1)
 }
 
+if ((zip <- Sys.getenv("R_ZIPCMD", "zip")) == "") zip <- "zip"
+
 suppressPackageStartupMessages({
     library("SpliceWiz")
 })
@@ -59,7 +61,7 @@ if(opt$mode == "buildRef") {
     )
     
     # zip output
-    zip(zipfile = opt$ref, files = list.files(
+    zip(zipfile = opt$ref, zip = zip, files = list.files(
         path = refPath,
         full.names = TRUE, recursive = TRUE
     ))
