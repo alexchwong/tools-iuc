@@ -61,13 +61,12 @@ if(opt$mode == "buildRef") {
     )
     
     # zip output
-    files2zip <- dir(refPath, full.names = TRUE)
+    tmpzip <- paste0(tempfile(), ".zip")
     zip::zip(
-        zipfile = opt$ref, 
-        files = files2zip,
-        recurse = TRUE,
-        root = refPath
+        zipfile = tmpzip, files = refPath,
+        recurse = TRUE, root = normalizePath(refPath)
     )
-    
+    file.copy(from = tmpzip, to = opt$ref)
+    file.remove(tmpzip)
     unlink(refPath, recursive = TRUE)
 }
