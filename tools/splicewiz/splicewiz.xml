@@ -26,14 +26,14 @@
 				$output1 $output2
 		#else if str($mode_condition.mode) == "buildRef":
             #if str($mode_condition.fasta_type.fasta_source) == "all_fasta_source":
-				Rscript '${__tool_directory__}/splicewiz.R'
+				Rscript '${__tool_directory__}/spliceWiz.R'
 				--cores \${GALAXY_SLOTS:-1}
 				--fasta '$mode_condition.fasta_type.ref.fields.path'
 				--gtf '$mode_condition.gtf'
 				--genome_type '$mode_condition.genome_type'
 				--ref $bRef_out
             #else if str($mode_condition.fasta_type.fasta_source) == "private_fasta":
-				Rscript '${__tool_directory__}/splicewiz.R'
+				Rscript '${__tool_directory__}/spliceWiz.R'
 				--cores \${GALAXY_SLOTS:-1}
 				--fasta '$mode_condition.fasta_type.ref'
 				--gtf '$mode_condition.gtf'
