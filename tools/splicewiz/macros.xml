@@ -1,0 +1,10 @@
+<macros>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="2.3.0">r-zip</requirement>    
+            <requirement type="package" version="1.20.3">r-getopt</requirement>
+            <requirement type="package" version="1.4.0">bioconductor-splicewiz</requirement>
+        </requirements>
+    </xml>
+    <token name="@SPLICEWIZ_VERSION@">1.4.0</token>
+</macros>

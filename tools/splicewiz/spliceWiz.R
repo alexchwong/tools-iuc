@@ -24,6 +24,7 @@ spec <- matrix(c(
   "gtf", "T", 1, "character",
   "genome_type", "g", 1, "character",
   "ref", "r", 1, "character",
+  "inbam", "b", 1, "character",
   "pbOutput", "P", 1, "character",
   "pbCOV", "C", 1, "character",
   "nxtSE", "N", 1, "character"
@@ -60,13 +61,56 @@ if(opt$mode == "buildRef") {
         ontologySpecies = species
     )
     
-    # zip output
-    tmpzip <- paste0(tempfile(), ".zip")
-    zip::zip(
-        zipfile = tmpzip, files = refPath,
-        recurse = TRUE, root = normalizePath(refPath)
-    )
-    file.copy(from = tmpzip, to = opt$ref)
-    file.remove(tmpzip)
+    # tar output
+    tmptar <- paste0(tempfile(), ".tar")
+    
+    setwd(refPath) # to archive all files under current directory
+    filestodo <- list.files(".", recursive = TRUE, full.names = TRUE)
+    utils::tar(tarfile = tmptar, files = filestodo, compression = "none")
+    setwd(tempdir())
+    
+    file.copy(from = tmptar, to = opt$ref, overwrite = TRUE)
+    
+    file.remove(tmptar)
     unlink(refPath, recursive = TRUE)
+} else if(opt$mode == "processBAM") {
+    
+    # extract input ref
+    refPath <- file.path(tempdir(), "reference")
+    if(dir.exists(refPath)) unlink(refPath, recursive = TRUE)
+    dir.create(refPath)
+    untar(opt$ref, exdir = refPath)
+
+    outPath <- file.path(tempdir(), "pb_outs")
+    if(dir.exists(outPath)) unlink(outPath, recursive = TRUE)
+    dir.create(outPath)
+    
+    bams <- unlist(strsplit(opt$inbam, split = ",", fixed = TRUE))
+    pbouts <- unlist(strsplit(opt$pbOutput, split = ",", fixed = TRUE))
+    pbcovs <- unlist(strsplit(opt$pbCOV, split = ",", fixed = TRUE))
+    sampleNames <- paste0("sample_", as.character(seq_len(length(bams))))
+    
+    processBAM(
+        bamfiles = bams,
+        sample_names = sampleNames,
+        reference_path = refPath,
+        output_path = outPath,
+        n_threads = opt$cores
+    )
+    # expect output as 
+        # "[tempdir]/bams/sample_1.txt.gz"
+        # "[tempdir]/bams/sample_1.cov"
+    
+    for(i in seq_len(length(bams))) {
+        file.copy(
+            from = file.path(outPath, paste0("sample_", as.character(i), ".txt.gz")), 
+            to = pbouts[i], overwrite = TRUE
+        )
+        file.copy(
+            from = file.path(outPath, paste0("sample_", as.character(i), ".cov")), 
+            to = pbcovs[i], overwrite = TRUE
+        )    
+    }
+    unlink(refPath, recursive = TRUE)
+    unlink(outPath, recursive = TRUE)
 }

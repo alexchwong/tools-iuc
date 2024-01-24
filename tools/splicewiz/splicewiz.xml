@@ -1,15 +1,12 @@
-<tool id="splicewiz" name="SpliceWiz for Galaxy" version="1.4.1">
+<tool id="splicewiz" name="SpliceWiz for Galaxy" version="@SPLICEWIZ_VERSION@">
     
     <!-- [REQUIRED] Tool description displayed after the tool name -->
     <description>This runs SpliceWiz on Galaxy</description>
-    
+    <macros>
+        <import>macros.xml</import>
+    </macros>
     <!-- [OPTIONAL] 3rd party tools, binaries, modules... required for the tool to work -->
-    <requirements>
-		<requirement type="package" version="2.3.0">r-zip</requirement>	
-		<requirement type="package" version="1.20.3">r-getopt</requirement>
-		
-		<requirement type="package" version="1.4.1">bioconductor-splicewiz</requirement>
-    </requirements>
+    <expand macro='requirements'/>
     
     <!-- [OPTIONAL] Command to be executed to get the tool's version string -->
     <version_command>
@@ -19,86 +16,118 @@
     </version_command>
     <!-- [REQUIRED] The command to execute  ${GALAXY_SLOTS} -->
     <command><![CDATA[
-		#if str($mode_condition.mode) == "buildRef":
+        #if str($mode_condition.mode) == "buildRef":
             #if str($mode_condition.fasta_type.fasta_source) == "all_fasta_source":
-				Rscript '${__tool_directory__}/spliceWiz.R'
-				--mode 'buildRef'
-				--cores \${GALAXY_SLOTS:-1}
-				--fasta '$mode_condition.fasta_type.ref.fields.path'
-				--gtf '$mode_condition.gtf'
-				--genome_type '$mode_condition.genome_type'
-				--ref $bRef_out
+                Rscript '${__tool_directory__}/spliceWiz.R'
+                --mode 'buildRef'
+                --cores \${GALAXY_SLOTS:-1}
+                --fasta '$mode_condition.fasta_type.ref_public.fields.path'
+                --gtf '$mode_condition.gtf'
+                --genome_type '$mode_condition.genome_type'
+                --ref $bRef_out
             #else if str($mode_condition.fasta_type.fasta_source) == "private_fasta":
-				Rscript '${__tool_directory__}/spliceWiz.R'
-				--mode 'buildRef'
-				--cores \${GALAXY_SLOTS:-1}
-				--fasta '$mode_condition.fasta_type.ref'
-				--gtf '$mode_condition.gtf'
-				--genome_type '$mode_condition.genome_type'
-				--ref $bRef_out
-			#end if
+                Rscript '${__tool_directory__}/spliceWiz.R'
+                --mode 'buildRef'
+                --cores \${GALAXY_SLOTS:-1}
+                --fasta '$mode_condition.fasta_type.ref_private'
+                --gtf '$mode_condition.gtf'
+                --genome_type '$mode_condition.genome_type'
+                --ref $bRef_out
+            #end if
+        #else if str($mode_condition.mode) == "processBAM":
+            #if str($mode_condition.singleMultBAM.inbam_type) == 'single':
+                Rscript '${__tool_directory__}/spliceWiz.R'
+                --mode 'processBAM'
+                --cores \${GALAXY_SLOTS:-1}
+                --ref '$mode_condition.ref'
+                --inbam '$mode_condition.singleMultBAM.bam_single'
+                --pbOutput $pb_out
+                --pbCOV $pb_cov
+            #else if str($mode_condition.singleMultBAM.inbam_type) == 'collection':
+                #set $tmp_inbams = ",".join([i.__str__() for i in $mode_condition.singleMultBAM.bam_mult])
+                #set $tmp_pbouts = ",".join([i.__str__() for i in $pb_outs])
+                #set $tmp_pbcovs = ",".join([i.__str__() for i in $pb_covs])
+                #silent sys.stderr.write($tmp_inbams)
+                #silent sys.stderr.write($tmp_pbouts)
+                Rscript '${__tool_directory__}/spliceWiz.R'
+                --mode 'processBAM'
+                --cores \${GALAXY_SLOTS:-1}
+                --ref '$mode_condition.ref'
+                --inbam '$tmp_inbams'
+                --pbOutput $tmp_pbouts
+                --pbCOV $tmp_pbcovs
+            #end if
         #end if
     ]]></command>
     <!-- [REQUIRED] Input files and tool parameters -->
     <inputs>
-		<conditional name="mode_condition" >
-			<param name="mode" type="select" label="Mode" help="" >
-				<option value="buildRef" selected="true">
-					buildRef()
-				</option>
-				<option value="processBAM">
-					processBAM()
-				</option>
-				<option value="collateData">
-					collateData()
-				</option>
-			</param>
+        <conditional name="mode_condition" >
+            <param name="mode" type="select" label="Mode" help="" >
+                <option value="buildRef" selected="true">
+                    buildRef()
+                </option>
+                <option value="processBAM">
+                    processBAM()
+                </option>
+                <option value="collateData">
+                    collateData()
+                </option>
+            </param>
             <when value="buildRef">
                 <conditional name="fasta_type" >
                     <param name="fasta_source" type="select" 
-						label="FASTA Source" help="The FASTA file of the genome" >
+                        label="FASTA Source" help="The FASTA file of the genome" >
                         <option value="all_fasta_source" selected="true">
-							From Galaxy's ALL_FASTA Library</option>
+                            From Galaxy's ALL_FASTA Library</option>
                         <option value="private_fasta" selected="true">
-							From User's History</option>
+                            From User's History</option>
                     </param>
                     <when value="all_fasta_source">
-                        <param name="ref" type="select" 
-							label="Source FASTA Sequence" 
-							help="A genome fasta file from ALL_FASTA">
+                        <param name="ref_public" type="select" 
+                            label="Source FASTA Sequence" 
+                            help="A genome fasta file from ALL_FASTA">
                             <options from_data_table="all_fasta"/>
                         </param>
                     </when>
                     <when value="private_fasta">
-                        <param name="ref" type="data" format="fasta" 
-							label="Source FASTA Sequence" 
-							help="A genome fasta file from user's history" />
+                        <param name="ref_private" type="data" format="fasta" 
+                            label="Source FASTA Sequence" 
+                            help="A genome fasta file from user's history" />
                     </when>
-				</conditional>
-				<param name="gtf" type="data" format="gtf" 
-					label="Input GTF file" 
-					help="A transcriptome annotation GTF file" />
-				<param name="genome_type" type="select" 
-					label="Genome type">
-				  <option value="hg38" selected="true">hg38</option>
-				  <option value="hg19">hg19</option>
-				  <option value="mm9">mm9</option>
-				  <option value="mm10">mm10</option>
-				  <option value="">other</option>
-				</param>
+                </conditional>
+                <param name="gtf" type="data" format="gtf" 
+                    label="Input GTF file" 
+                    help="A transcriptome annotation GTF file" />
+                <param name="genome_type" type="select" 
+                    label="Genome type">
+                  <option value="hg38" selected="true">hg38</option>
+                  <option value="hg19">hg19</option>
+                  <option value="mm9">mm9</option>
+                  <option value="mm10">mm10</option>
+                  <option value="">other</option>
+                </param>
             </when>
             <when value="processBAM">
-				<param name="ref" type="data" format="zip" 
-					label="(Zipped) SpliceWiz reference" 
-					help="A zip file, containing contents of SpliceWiz reference directory" />
-				<param name="ref" type="data" format="bam" multiple="True"
-					label="One or more BAM files" 
-					help="" />
+                <param name="ref" type="data" format="tar" 
+                    label="(TAR) SpliceWiz reference" 
+                    help="A tar file, containing contents of SpliceWiz reference directory" />
+                <conditional name="singleMultBAM">
+                    <param name="inbam_type" type="select" label="Single or multiple BAM files">
+                        <option value="single" selected="true">Single BAM</option>
+                        <option value="collection">Multiple BAMs (as collection)</option>
+                    </param>
+                    <when value="single">
+                        <param format="bam" name="bam_single" type="data" label="BAM file"/>
+                    </when>
+                    <when value="collection">
+                        <param format="bam" name="bam_mult" type="data_collection" collection_type="list" label="BAM files (as collection)"/>
+                    </when>
+                </conditional>
             </when>
             <when value="collateData">
 
             </when>
-		</conditional>
+        </conditional>
     </inputs>
     
     <!-- [STRONGLY RECOMMANDED] Exit code rules -->
@@ -109,19 +138,31 @@
 
     <!-- [REQUIRED] Output files -->
     <outputs>
-        <data name="pb_out" format="txt" label="SpliceWiz processBAM Output">
-			<filter>mode_condition['mode'] == 'processBAM'</filter>
+        <data name="bRef_out" format="tar" label="(TAR) SpliceWiz Reference"> 
+            <filter>mode_condition['mode'] == 'buildRef'</filter>
+        </data>
+        <data name="pb_out" format="data" label="SpliceWiz processBAM Output">
+            <filter>mode_condition['mode'] == 'processBAM'</filter>
+            <filter>mode_condition['singleMultBAM']['inbam_type'] == 'single'</filter>
         </data>
         <data name="pb_cov" format="data" label="SpliceWiz COV File"> 
-			<filter>mode_condition['mode'] == 'processBAM'</filter>
+            <filter>mode_condition['mode'] == 'processBAM'</filter>
+            <filter>mode_condition['singleMultBAM']['inbam_type'] == 'single'</filter>
         </data>
-        <data name="bRef_out" format="zip" label="(Zipped) SpliceWiz Reference"> 
-			<filter>mode_condition['mode'] == 'buildRef'</filter>
+        <collection name="pb_outs" type="list" label="SpliceWiz processBAM Outputs" 
+            structured_like="mode_condition|singleMultBAM|bam_mult" inherit_format="false">
+            <filter>mode_condition['mode'] == 'processBAM'</filter>
+            <filter>mode_condition['singleMultBAM']['inbam_type'] == 'collection'</filter>
+        </collection>
+        <collection name="pb_covs" type="list" label="SpliceWiz COV files" 
+            structured_like="mode_condition|singleMultBAM|bam_mult" inherit_format="false">
+            <filter>mode_condition['mode'] == 'processBAM'</filter>
+            <filter>mode_condition['singleMultBAM']['inbam_type'] == 'collection'</filter>
+        </collection>
+        <data name="nxtSE_out" format="tar" label="(TAR) NxtSE Dataset"> 
+            <filter>mode_condition['mode'] == 'collateData'</filter>
         </data>
-        <data name="nxtSE_out" format="zip" label="(Zipped) NxtSE Dataset"> 
-			<filter>mode_condition['mode'] == 'collateData'</filter>
-        </data>
-	</outputs>    
+    </outputs>    
     
     <!-- [OPTIONAL] Tests to be run manually by the Galaxy admin -->
     <tests>
@@ -203,8 +244,8 @@ Input files
 +-------------------------+-----------+
 
 Constraints files : 
-	* column 1 : description
-	* column 5 : description
+    * column 1 : description
+    * column 5 : description
 
 
 ----------
@@ -212,11 +253,11 @@ Parameters
 ----------
 
 parameter1
-	Parameter 1 description
+    Parameter 1 description
 
 parameter2longer
-	| Parameter 2 description
-	| on 2 lines if needed
+    | Parameter 2 description
+    | on 2 lines if needed
 
 
 ------------
@@ -224,13 +265,13 @@ Output files
 ------------
 
 output.tab
-	| File description
-	| You can continue your analysis with the tool retcor or fillPeaks
+    | File description
+    | You can continue your analysis with the tool retcor or fillPeaks
 
 outFile.csv
-	File description
+    File description
 
-	
+    
 ---------------------------------------------------
 
 ---------------
@@ -244,14 +285,14 @@ Input files
 | **by checking the box "Convert spaces to tabs: YES"**
 
 file1.txt
-	Model input file::
-	
-		colonne1 colonne2 col3 etc
-		element1.1 element1.2 el1.3 ...
-		element2.1 elem2.2 el1.3 ...
-		elem3.1 3.2 el1.3 ...
+    Model input file::
+    
+        colonne1 colonne2 col3 etc
+        element1.1 element1.2 el1.3 ...
+        element2.1 elem2.2 el1.3 ...
+        elem3.1 3.2 el1.3 ...
 
-		
+        
 Parameters
 ==========
 
@@ -268,7 +309,7 @@ output.pdf
 .. image:: ./static/images/output.png
         :width: 500
         :height: 400
-	
+    
 
 output.txt
 
@@ -282,8 +323,8 @@ elem3.1       3.2     el1.3 ...
 
 
 output.other::
-	Something
-	
+    Something
+    
 ---------------------------------------------------
 
 .. class:: infomark
