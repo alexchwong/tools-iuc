@@ -57,6 +57,20 @@
                 --pbOutput $tmp_pbouts
                 --pbCOV $tmp_pbcovs
             #end if
+        #else if str($mode_condition.mode) == "collateData":
+            #set $tmp_names = ",".join($pb_4nxt.keys())
+            #set $tmp_pbouts = ",".join([i.__str__() for i in $pb_4nxt])
+            #set $tmp_pbcovs = ",".join([i.__str__() for i in $cov_4nxt])
+            Rscript '${__tool_directory__}/spliceWiz.R'
+            --mode 'collateData'
+            --cores \${GALAXY_SLOTS:-1}
+            --ref '$mode_condition.ref'
+            --pbOutput $tmp_pbouts
+            --pbCOV $tmp_pbcovs
+            --nxtNames $tmp_names
+            --nxtNovelSplicing '$mode_condition.novel_jn'
+            --nxtPackageCOV '$mode_condition.package_cov'
+            --nxtSE $nxtSE_out
         #end if
     ]]></command>
     <!-- [REQUIRED] Input files and tool parameters -->
@@ -64,23 +78,23 @@
         <conditional name="mode_condition" >
             <param name="mode" type="select" label="Mode" help="" >
                 <option value="buildRef" selected="true">
-                    buildRef()
+                    Build Reference
                 </option>
                 <option value="processBAM">
-                    processBAM()
+                    Process BAMs
                 </option>
                 <option value="collateData">
-                    collateData()
+                    Collate Data (into NxtSE)
                 </option>
             </param>
             <when value="buildRef">
                 <conditional name="fasta_type" >
                     <param name="fasta_source" type="select" 
                         label="FASTA Source" help="The FASTA file of the genome" >
-                        <option value="all_fasta_source" selected="true">
-                            From Galaxy's ALL_FASTA Library</option>
                         <option value="private_fasta" selected="true">
-                            From User's History</option>
+                            From User History</option>
+                        <option value="all_fasta_source">
+                            From Galaxy Library</option>
                     </param>
                     <when value="all_fasta_source">
                         <param name="ref_public" type="select" 
@@ -100,11 +114,11 @@
                     help="A transcriptome annotation GTF file" />
                 <param name="genome_type" type="select" 
                     label="Genome type">
-                  <option value="hg38" selected="true">hg38</option>
+                  <option value="" selected="true">other</option>
+                  <option value="hg38">hg38</option>
                   <option value="hg19">hg19</option>
                   <option value="mm9">mm9</option>
                   <option value="mm10">mm10</option>
-                  <option value="">other</option>
                 </param>
             </when>
             <when value="processBAM">
@@ -125,7 +139,23 @@
                 </conditional>
             </when>
             <when value="collateData">
-
+                <param name="ref" type="data" format="tar" 
+                    label="(TAR) SpliceWiz reference" 
+                    help="A tar file, containing contents of SpliceWiz reference directory" />
+                <param name="pb_4nxt" type="data_collection" 
+                    collection_type="list" label="SpliceWiz processBAM outputs"/>
+                <param name="cov_4nxt" type="data_collection" 
+                    collection_type="list" label="SpliceWiz COV files"/>
+                <param name="novel_jn" type="select" 
+                    label="Include novel splicing">
+                  <option value="yes" selected="true">Yes</option>
+                  <option value="no">No</option>
+                </param>
+                <param name="package_cov" type="select" 
+                    label="Include COV files in NxtSE">
+                  <option value="yes" selected="true">Yes</option>
+                  <option value="no">No</option>
+                </param>
             </when>
         </conditional>
     </inputs>
@@ -141,21 +171,21 @@
         <data name="bRef_out" format="tar" label="(TAR) SpliceWiz Reference"> 
             <filter>mode_condition['mode'] == 'buildRef'</filter>
         </data>
-        <data name="pb_out" format="data" label="SpliceWiz processBAM Output">
+        <data name="pb_out" format="txt.gz" label="SpliceWiz processBAM Output">
             <filter>mode_condition['mode'] == 'processBAM'</filter>
             <filter>mode_condition['singleMultBAM']['inbam_type'] == 'single'</filter>
         </data>
-        <data name="pb_cov" format="data" label="SpliceWiz COV File"> 
+        <data name="pb_cov" format="cov" label="SpliceWiz COV File"> 
             <filter>mode_condition['mode'] == 'processBAM'</filter>
             <filter>mode_condition['singleMultBAM']['inbam_type'] == 'single'</filter>
         </data>
         <collection name="pb_outs" type="list" label="SpliceWiz processBAM Outputs" 
-            structured_like="mode_condition|singleMultBAM|bam_mult" inherit_format="false">
+            structured_like="mode_condition|singleMultBAM|bam_mult" format="binary">
             <filter>mode_condition['mode'] == 'processBAM'</filter>
             <filter>mode_condition['singleMultBAM']['inbam_type'] == 'collection'</filter>
         </collection>
         <collection name="pb_covs" type="list" label="SpliceWiz COV files" 
-            structured_like="mode_condition|singleMultBAM|bam_mult" inherit_format="false">
+            structured_like="mode_condition|singleMultBAM|bam_mult" format="binary">
             <filter>mode_condition['mode'] == 'processBAM'</filter>
             <filter>mode_condition['singleMultBAM']['inbam_type'] == 'collection'</filter>
         </collection>
